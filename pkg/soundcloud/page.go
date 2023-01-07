@@ -2,6 +2,10 @@ package soundcloud
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -60,4 +64,34 @@ func GetSoundMetaData(doc *goquery.Document) *SoundData {
 	dataSound, _ := formatData(soundData)
 
 	return dataSound
+}
+
+func GetClientId(doc *goquery.Document) string {
+
+	// find the last src under the body
+	apiurl, exists := doc.Find("body > script").Last().Attr("src")
+	if !exists {
+		return ""
+	}
+
+	// making a GET request to find the client_id
+	resp, err := http.Get(apiurl)
+	if err != nil {
+		fmt.Printf("Something went wrong while requesting : %s , Error : %s", apiurl, err)
+	}
+
+	// reading the body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer resp.Body.Close()
+
+	// search for the client_id
+	pattern := ",client_id:\"([^\"]*?.[^\"]*?)\""
+	re := regexp.MustCompile(pattern)
+	matches := re.FindAllStringSubmatch(string(body), 1)
+
+	return matches[0][1]
 }
