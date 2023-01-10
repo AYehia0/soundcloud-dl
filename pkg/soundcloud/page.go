@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/AYehia0/soundcloud-dl/pkg/client"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -94,4 +95,34 @@ func GetClientId(doc *goquery.Document) string {
 	matches := re.FindAllStringSubmatch(string(body), 1)
 
 	return matches[0][1]
+}
+
+func GetDownloadUrls(data []Transcode, clientId string) []DownloadTrack {
+	tracks := make([]DownloadTrack, len(data))
+
+	for _, tcode := range data {
+		url := tcode.ApiUrl + "?client_id=" + clientId
+		statusCode, body, err := client.Get(url)
+		if err != nil && statusCode != http.StatusOK {
+			continue
+		}
+		mediaUrl := Media{}
+		json.Unmarshal(body, &mediaUrl)
+
+		tmpTrack := DownloadTrack{
+			Url:     mediaUrl.Url,
+			Quality: mapQuality(tcode.ApiUrl),
+		}
+		tracks = append(tracks, tmpTrack)
+	}
+	return tracks
+}
+
+// check if the trackUrl is mp3:progressive or ogg:hls
+func mapQuality(url string) string {
+	tmp := strings.Split(url, "/")
+	if tmp[len(tmp)-1] == "progressive" {
+		return "mp3"
+	}
+	return "ogg"
 }
