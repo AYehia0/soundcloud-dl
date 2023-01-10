@@ -20,3 +20,14 @@ type SoundData struct {
 	Downloadable bool   `json:"downloadable"`
 	Description  string `json:"description,omitempty"`
 }
+
+type Media struct {
+	Url string `json:"url"`
+}
+
+type DownloadTrack struct {
+	Url     string
+	Size    int
+	Data    []byte
+	Quality string `default:"mp3"`
+}
