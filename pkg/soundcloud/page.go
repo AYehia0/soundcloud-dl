@@ -13,6 +13,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+var Sound *SoundData
+
 // convert the data map[string]any to well defined struct
 // by marshalling then unmarshalling, which is probably isn't the best thing todo.
 func formatData(data map[string]any) (*SoundData, error) {
@@ -62,9 +64,9 @@ func GetSoundMetaData(doc *goquery.Document) *SoundData {
 	soundData := result[7]["data"].(map[string]any)
 
 	// TODO: return the error here
-	dataSound, _ := formatData(soundData)
+	Sound, _ = formatData(soundData)
 
-	return dataSound
+	return Sound
 }
 
 func GetClientId(doc *goquery.Document) string {
@@ -97,7 +99,8 @@ func GetClientId(doc *goquery.Document) string {
 	return matches[0][1]
 }
 
-func GetDownloadUrls(data []Transcode, clientId string) []DownloadTrack {
+func GetFormattedDL(data []Transcode, clientId string) []DownloadTrack {
+	ext := "mp3" // the default extension type
 	tracks := make([]DownloadTrack, 0)
 
 	for _, tcode := range data {
@@ -106,12 +109,18 @@ func GetDownloadUrls(data []Transcode, clientId string) []DownloadTrack {
 		if err != nil && statusCode != http.StatusOK {
 			continue
 		}
+		q := mapQuality(tcode.ApiUrl, tcode.Format)
+		if q == "ogg" {
+			ext = q
+		}
 		mediaUrl := Media{}
 		json.Unmarshal(body, &mediaUrl)
 
 		tmpTrack := DownloadTrack{
-			Url:     mediaUrl.Url,
-			Quality: mapQuality(tcode.ApiUrl, tcode.Format),
+			Url:       mediaUrl.Url,
+			Quality:   q,
+			SoundData: Sound,
+			Ext:       ext,
 		}
 		tracks = append(tracks, tmpTrack)
 	}
@@ -122,7 +131,9 @@ func GetDownloadUrls(data []Transcode, clientId string) []DownloadTrack {
 func mapQuality(url string, format string) string {
 	tmp := strings.Split(url, "/")
 	if tmp[len(tmp)-1] == "hls" && strings.HasPrefix(format, "audio/ogg") {
-		return "ogg"
+		return "high"
+	} else if tmp[len(tmp)-1] == "hls" && strings.HasPrefix(format, "audio/mpeg") {
+		return "medium"
 	}
-	return "mp3"
+	return "low"
 }

@@ -11,6 +11,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+var defaultQuality string = "low"
+
 func Sc(args []string) {
 
 	url := args[0]
@@ -40,5 +42,22 @@ func Sc(args []string) {
 		fmt.Printf("The Url : %s doesn't return a valid track are you sure the track is publicly accessed ?", url)
 		return
 	}
-	fmt.Println("ALL OK :D")
+	clientId := soundcloud.GetClientId(doc)
+
+	list := soundcloud.GetFormattedDL(soundData.Transcodings, clientId)
+	fmt.Println(list[0])
+
+	soundcloud.Download(chooseTrackDownload(list, defaultQuality))
+}
+
+// TEMP: Just for now, return the quality
+// the default quality is just mp3, highest is ogg
+// if the quality doesn't exist return the first one
+func chooseTrackDownload(tracks []soundcloud.DownloadTrack, target string) soundcloud.DownloadTrack {
+	for _, track := range tracks {
+		if track.Quality == target {
+			return track
+		}
+	}
+	return tracks[0]
 }
