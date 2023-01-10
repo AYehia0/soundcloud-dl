@@ -98,7 +98,7 @@ func GetClientId(doc *goquery.Document) string {
 }
 
 func GetDownloadUrls(data []Transcode, clientId string) []DownloadTrack {
-	tracks := make([]DownloadTrack, len(data))
+	tracks := make([]DownloadTrack, 0)
 
 	for _, tcode := range data {
 		url := tcode.ApiUrl + "?client_id=" + clientId
@@ -111,7 +111,7 @@ func GetDownloadUrls(data []Transcode, clientId string) []DownloadTrack {
 
 		tmpTrack := DownloadTrack{
 			Url:     mediaUrl.Url,
-			Quality: mapQuality(tcode.ApiUrl),
+			Quality: mapQuality(tcode.ApiUrl, tcode.Format),
 		}
 		tracks = append(tracks, tmpTrack)
 	}
@@ -119,10 +119,10 @@ func GetDownloadUrls(data []Transcode, clientId string) []DownloadTrack {
 }
 
 // check if the trackUrl is mp3:progressive or ogg:hls
-func mapQuality(url string) string {
+func mapQuality(url string, format string) string {
 	tmp := strings.Split(url, "/")
-	if tmp[len(tmp)-1] == "progressive" {
-		return "mp3"
+	if tmp[len(tmp)-1] == "hls" && strings.HasPrefix(format, "audio/ogg") {
+		return "ogg"
 	}
-	return "ogg"
+	return "mp3"
 }
