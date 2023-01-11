@@ -25,6 +25,8 @@ var rootCmd = &cobra.Command{
 			return
 		}
 		// run the core app
+		// FIXME: Probably not the best thing to do lol, it's better to just pass it to the function, who cares.
+		args = append(args, DownloadPath)
 		internal.Sc(args)
 	},
 }
