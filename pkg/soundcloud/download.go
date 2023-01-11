@@ -44,7 +44,8 @@ func Download(track DownloadTrack, dlpath string) {
 	testPath := path.Join(dlpath, track.SoundData.Title+track.Ext)
 	path, err := expandPath(testPath)
 
-	if fileExists(path) {
+	// TODO: handle all different kind of errors
+	if fileExists(path) || err != nil {
 		return
 	}
 	resp, err := http.Get(track.Url)
