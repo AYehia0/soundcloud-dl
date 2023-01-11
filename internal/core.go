@@ -16,6 +16,7 @@ var defaultQuality string = "low"
 func Sc(args []string) {
 
 	url := args[0]
+	downloadPath := args[len(args)-1]
 
 	statusCode, body, err := client.Get(url)
 
@@ -45,9 +46,8 @@ func Sc(args []string) {
 	clientId := soundcloud.GetClientId(doc)
 
 	list := soundcloud.GetFormattedDL(soundData.Transcodings, clientId)
-	fmt.Println(list[0])
 
-	soundcloud.Download(chooseTrackDownload(list, defaultQuality))
+	soundcloud.Download(chooseTrackDownload(list, defaultQuality), downloadPath)
 }
 
 // TEMP: Just for now, return the quality
