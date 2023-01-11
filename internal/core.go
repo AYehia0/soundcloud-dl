@@ -11,7 +11,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-var defaultQuality string = "low"
+var defaultQuality string = "medium"
 
 func Sc(args []string) {
 
