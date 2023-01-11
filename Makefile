@@ -4,7 +4,8 @@ LANG=en_US.UTF-8
 SHELL=/bin/bash
 
 run:
-	go run main.go ${TRACK_URL} ${DL_PATH}
+	rm -f download/*
+	go run main.go ${TRACK_URL} --download-path ${DL_PATH}
 build:
 	go build -o bin/sc-dl main.go
 test:
