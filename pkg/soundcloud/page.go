@@ -42,6 +42,7 @@ func formatData(data map[string]any) (*SoundData, error) {
 }
 
 // extract some meta data under : window.__sc_hydration
+// check if the track exists and open to public
 func GetSoundMetaData(doc *goquery.Document) *SoundData {
 
 	page := doc.First().Text()
@@ -110,8 +111,8 @@ func GetFormattedDL(data []Transcode, clientId string) []DownloadTrack {
 			continue
 		}
 		q := mapQuality(tcode.ApiUrl, tcode.Format)
-		if q == "ogg" {
-			ext = q
+		if q == "high" {
+			ext = "ogg"
 		}
 		mediaUrl := Media{}
 		json.Unmarshal(body, &mediaUrl)
