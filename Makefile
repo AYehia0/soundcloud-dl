@@ -10,6 +10,8 @@ build:
 	go build -o bin/sc-dl main.go
 test:
 	go test -v # No tests for now
+install:
+	go install
 compile:
 	echo "Compiling for multiple Platforms"
 	GOOS=linux GOARCH=386 go build -o bin/sc-dl-linux main.go
