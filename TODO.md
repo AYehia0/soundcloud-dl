@@ -1,5 +1,5 @@
 # TODO
-- [ ] Add a flag `--highest-quality` : Get the best quality.
+- [X] Add a flag `--highest-quality` : Get the best quality.
 - [ ] ~~Add a flag `--get-sizes` : Get all the sizes of a track.~~
 - [X] Add a flag `--download-path` : path to the download location.
 - [X] Add support for downloading `hls`.
