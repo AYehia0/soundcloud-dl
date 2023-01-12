@@ -6,8 +6,6 @@ package soundcloud
 import (
 	"log"
 	"regexp"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 // check if the url is a soundcloud url
@@ -34,14 +32,4 @@ func IsValidUrl(url string) bool {
 		return true
 	}
 	return false
-}
-
-// check if the track exists and open to public
-// by checking the html for something unique like : likes,
-// the url must be a IsValidUrl first
-func IsValidTrack(doc *goquery.Document) *SoundData {
-
-	sound := GetSoundMetaData(doc)
-
-	return sound
 }

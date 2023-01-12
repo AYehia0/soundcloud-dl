@@ -106,7 +106,8 @@ func downloadM3u8(m3u8Url string, filepath string) error {
 // download the track
 func Download(track DownloadTrack, dlpath string) {
 	// TODO: Prompt Y/N if the file exists and rename by adding _<random/date>.<ext>
-	testPath := path.Join(dlpath, track.SoundData.Title+track.Ext)
+	trackName := track.SoundData.Title + "[" + track.Quality + "]." + track.Ext
+	testPath := path.Join(dlpath, trackName)
 	path, err := expandPath(testPath)
 
 	// TODO: handle all different kind of errors
