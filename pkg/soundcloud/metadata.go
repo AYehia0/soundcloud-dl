@@ -2,7 +2,6 @@
 package soundcloud
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -41,7 +40,6 @@ func AddMetadata(track DownloadTrack, filePath string) error {
 	artistName := strings.Split(track.SoundData.PermalinkUrl, "/")
 	tag.SetArtist(artistName[3])
 
-	fmt.Println("Img url is : ", imgBytes)
 	if imgBytes != nil {
 		tag.AddAttachedPicture(
 			id3v2.PictureFrame{
