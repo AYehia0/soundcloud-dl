@@ -54,6 +54,13 @@ func Sc(args []string, bestQuality bool) {
 		defaultQuality = getHighestQuality(qualities)
 	}
 
-	soundcloud.Download(chooseTrackDownload(list, defaultQuality), downloadPath)
-	fmt.Printf("\n%s Track saved to : %s\n", theme.Green("[-]"), theme.Magenta(downloadPath))
+	track := chooseTrackDownload(list, defaultQuality)
+	filePath := soundcloud.Download(track, downloadPath)
+
+	// add tags
+	err = soundcloud.AddMetadata(track, filePath)
+	if err != nil {
+		fmt.Printf("Error happend while adding tags to the track : %s\n", err)
+	}
+	fmt.Printf("\n%s Track saved to : %s\n", theme.Green("[-]"), theme.Magenta(filePath))
 }
