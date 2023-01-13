@@ -3,7 +3,6 @@ package soundcloud
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -36,7 +35,6 @@ func fileExists(path string) bool {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return false
 	}
-	fmt.Printf("File: %s Exists\n", path)
 	return true
 }
 
@@ -104,7 +102,7 @@ func downloadM3u8(m3u8Url string, filepath string) error {
 }
 
 // download the track
-func Download(track DownloadTrack, dlpath string) {
+func Download(track DownloadTrack, dlpath string) string {
 	// TODO: Prompt Y/N if the file exists and rename by adding _<random/date>.<ext>
 	trackName := track.SoundData.Title + "[" + track.Quality + "]." + track.Ext
 	testPath := path.Join(dlpath, trackName)
@@ -112,18 +110,18 @@ func Download(track DownloadTrack, dlpath string) {
 
 	// TODO: handle all different kind of errors
 	if fileExists(path) || err != nil {
-		return
+		return ""
 	}
 
 	// check if the track is hls
 	if track.Quality != "low" {
 		downloadM3u8(track.Url, path)
-		return
+		return path
 	}
 	resp, err := http.Get(track.Url)
 
 	if err != nil {
-		return
+		return ""
 	}
 	defer resp.Body.Close()
 
@@ -137,4 +135,6 @@ func Download(track DownloadTrack, dlpath string) {
 	)
 
 	io.Copy(io.MultiWriter(f, bar), resp.Body)
+
+	return path
 }
