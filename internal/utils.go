@@ -79,3 +79,41 @@ func getHighestQuality(qualities []string) string {
 	}
 	return ""
 }
+
+// select a url to download
+func selectSearchUrl(searches *soundcloud.SearchResult) *soundcloud.SoundData {
+
+	titles := make([]string, 0)
+
+	for _, res := range searches.Sounds {
+		titles = append(titles, res.Title)
+	}
+	prompt := promptui.Select{
+		Label: "Choose a track to download :",
+		Items: titles,
+	}
+	ind, _, err := prompt.Run()
+	if err != nil {
+		os.Exit(0)
+	}
+
+	return &searches.Sounds[ind]
+}
+
+// prompt the input search for a keyword
+func getUserSearch() string {
+
+	prompt := promptui.Prompt{
+		Label:   "🔍Search: ",
+		Default: "surah yasin",
+	}
+
+	result, err := prompt.Run()
+
+	if err != nil {
+		os.Exit(0)
+	}
+
+	return result
+
+}

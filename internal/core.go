@@ -8,13 +8,16 @@ import (
 )
 
 var defaultQuality string = "low"
+var soundData = &soundcloud.SoundData{}
 
-func Sc(args []string, bestQuality bool) {
+func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 
-	url := args[0]
-	downloadPath := args[len(args)-1]
+	url := ""
+	if len(args) > 0 {
+		url = args[0]
+	}
 
-	if !initValidations(url) {
+	if url != "" && !initValidations(url) {
 		return
 	}
 
@@ -24,16 +27,25 @@ func Sc(args []string, bestQuality bool) {
 		fmt.Println("Something went wrong while getting the Client Id!")
 		return
 	}
+	// --search-and-download
+	if search {
+		keyword := getUserSearch()
+		searchResult := soundcloud.SearchTracksByKeyword(keyword, 0, clientId)
 
-	soundData := soundcloud.GetSoundMetaData(url, clientId)
-	if soundData == nil {
-		fmt.Printf("%s URL : %s doesn't return a valid track. Track is publicly accessed ?", theme.Red("[+]"), theme.Magenta(url))
-		return
+		// select one to download
+		soundData = selectSearchUrl(searchResult)
+	} else {
+
+		soundData = soundcloud.GetSoundMetaData(url, clientId)
+		if soundData == nil {
+			fmt.Printf("%s URL : %s doesn't return a valid track. Track is publicly accessed ?", theme.Red("[+]"), theme.Magenta(url))
+			return
+		}
+
+		fmt.Printf("%s Track found. Title : %s - Duration : %s\n", theme.Green("[+]"), theme.Magenta(soundData.Title), theme.Magenta(theme.FormatTime(soundData.Duration)))
 	}
 
-	fmt.Printf("%s Track found. Title : %s - Duration : %s\n", theme.Green("[+]"), theme.Magenta(soundData.Title), theme.Magenta(theme.FormatTime(soundData.Duration)))
-
-	list := soundcloud.GetFormattedDL(soundData.Transcodes.Transcodings, clientId)
+	list := soundcloud.GetFormattedDL(soundData, clientId)
 
 	// show available download options
 	qualities := getQualities(list)

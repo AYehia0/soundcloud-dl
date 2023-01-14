@@ -15,6 +15,7 @@ import (
 )
 
 var Sound *SoundData
+var SearchLimit = 6
 
 // extract some meta data under : window.__sc_hydration
 // check if the track exists and open to public
@@ -34,6 +35,11 @@ func GetSoundMetaData(url string, clientId string) *SoundData {
 }
 
 func GetClientId(url string) string {
+
+	if url == "" {
+		// the best url ever, if you find this then you're so cool :D I love you :DDD
+		url = "https://soundcloud.com/ahmed-yehia0"
+	}
 
 	statusCode, bodyData, err := client.Get(url)
 
@@ -74,9 +80,10 @@ func GetClientId(url string) string {
 	return matches[0][1]
 }
 
-func GetFormattedDL(data []Transcode, clientId string) []DownloadTrack {
+func GetFormattedDL(track *SoundData, clientId string) []DownloadTrack {
 	ext := "mp3" // the default extension type
 	tracks := make([]DownloadTrack, 0)
+	data := track.Transcodes.Transcodings
 
 	for _, tcode := range data {
 		url := tcode.ApiUrl + "?client_id=" + clientId
@@ -94,7 +101,7 @@ func GetFormattedDL(data []Transcode, clientId string) []DownloadTrack {
 		tmpTrack := DownloadTrack{
 			Url:       mediaUrl.Url,
 			Quality:   q,
-			SoundData: Sound,
+			SoundData: track,
 			Ext:       ext,
 		}
 		tracks = append(tracks, tmpTrack)
@@ -111,4 +118,20 @@ func mapQuality(url string, format string) string {
 		return "medium"
 	}
 	return "low"
+}
+
+func SearchTracksByKeyword(keyword string, offset int, clientId string) *SearchResult {
+
+	apiUrl := GetSeachAPIUrl(keyword, SearchLimit, offset, clientId)
+
+	statusCode, body, err := client.Get(apiUrl)
+
+	if err != nil && statusCode != http.StatusOK {
+		return nil
+	}
+
+	var result = SearchResult{}
+	json.Unmarshal(body, &result)
+
+	return &result
 }

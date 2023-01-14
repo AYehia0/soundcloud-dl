@@ -43,3 +43,8 @@ type DownloadTrack struct {
 	Ext       string
 	SoundData *SoundData
 }
+
+type SearchResult struct {
+	Sounds []SoundData `json:"collection"`
+	Next   string      `json:"next_href"`
+}
