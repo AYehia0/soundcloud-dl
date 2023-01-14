@@ -1,15 +1,10 @@
 package internal
 
 import (
-	"bytes"
 	"fmt"
-	"log"
-	"net/http"
 
-	"github.com/AYehia0/soundcloud-dl/pkg/client"
 	"github.com/AYehia0/soundcloud-dl/pkg/soundcloud"
 	"github.com/AYehia0/soundcloud-dl/pkg/theme"
-	"github.com/PuerkitoBio/goquery"
 )
 
 var defaultQuality string = "low"
@@ -23,19 +18,14 @@ func Sc(args []string, bestQuality bool) {
 		return
 	}
 
-	statusCode, body, err := client.Get(url)
+	clientId := soundcloud.GetClientId(url)
 
-	if err != nil {
-		log.Fatalf("An Error : %s happended while requesting : %s", err, url)
-	}
-	if statusCode != http.StatusOK {
-		fmt.Println("URL doesn't exist : status is : ", statusCode)
+	if clientId == "" {
+		fmt.Println("Something went wrong while getting the Client Id!")
 		return
 	}
 
-	// convert the bytes array into something we can read, as goquery doesn't accept strings
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
-	soundData := soundcloud.GetSoundMetaData(doc)
+	soundData := soundcloud.GetSoundMetaData(url, clientId)
 	if soundData == nil {
 		fmt.Printf("%s URL : %s doesn't return a valid track. Track is publicly accessed ?", theme.Red("[+]"), theme.Magenta(url))
 		return
@@ -43,8 +33,7 @@ func Sc(args []string, bestQuality bool) {
 
 	fmt.Printf("%s Track found. Title : %s - Duration : %s\n", theme.Green("[+]"), theme.Magenta(soundData.Title), theme.Magenta(theme.FormatTime(soundData.Duration)))
 
-	clientId := soundcloud.GetClientId(doc)
-	list := soundcloud.GetFormattedDL(soundData.Transcodings, clientId)
+	list := soundcloud.GetFormattedDL(soundData.Transcodes.Transcodings, clientId)
 
 	// show available download options
 	qualities := getQualities(list)
@@ -58,7 +47,7 @@ func Sc(args []string, bestQuality bool) {
 	filePath := soundcloud.Download(track, downloadPath)
 
 	// add tags
-	err = soundcloud.AddMetadata(track, filePath)
+	err := soundcloud.AddMetadata(track, filePath)
 	if err != nil {
 		fmt.Printf("Error happend while adding tags to the track : %s\n", err)
 	}

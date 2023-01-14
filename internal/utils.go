@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/AYehia0/soundcloud-dl/pkg/soundcloud"
 	"github.com/AYehia0/soundcloud-dl/pkg/theme"
@@ -55,8 +56,7 @@ func chooseQuality(qualities []string) string {
 	}
 	_, q, err := prompt.Run()
 	if err != nil {
-		fmt.Printf("Prompt Failed : %s, continuing with : %s quality instead!", err, qualities[0])
-		return qualities[0]
+		os.Exit(0)
 	}
 	return q
 }
