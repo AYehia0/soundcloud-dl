@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/AYehia0/soundcloud-dl/pkg/soundcloud"
 	"github.com/AYehia0/soundcloud-dl/pkg/theme"
@@ -55,8 +56,7 @@ func chooseQuality(qualities []string) string {
 	}
 	_, q, err := prompt.Run()
 	if err != nil {
-		fmt.Printf("Prompt Failed : %s, continuing with : %s quality instead!", err, qualities[0])
-		return qualities[0]
+		os.Exit(0)
 	}
 	return q
 }
@@ -78,4 +78,42 @@ func getHighestQuality(qualities []string) string {
 		}
 	}
 	return ""
+}
+
+// select a url to download
+func selectSearchUrl(searches *soundcloud.SearchResult) *soundcloud.SoundData {
+
+	titles := make([]string, 0)
+
+	for _, res := range searches.Sounds {
+		titles = append(titles, res.Title)
+	}
+	prompt := promptui.Select{
+		Label: "Choose a track to download :",
+		Items: titles,
+	}
+	ind, _, err := prompt.Run()
+	if err != nil {
+		os.Exit(0)
+	}
+
+	return &searches.Sounds[ind]
+}
+
+// prompt the input search for a keyword
+func getUserSearch() string {
+
+	prompt := promptui.Prompt{
+		Label:   "🔍Search: ",
+		Default: "surah yasin",
+	}
+
+	result, err := prompt.Run()
+
+	if err != nil {
+		os.Exit(0)
+	}
+
+	return result
+
 }

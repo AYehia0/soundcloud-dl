@@ -4,7 +4,9 @@
 - [X] Add a flag `--download-path` : path to the download location.
 - [X] Add support for downloading `hls`.
 - [X] Add the metadata to the track after downloading.
-- [ ] Use the soundcloud api call instead of using `goquery`.
+- [X] Add Download track through search.
+- [ ] Add auto-completion for the flags.
+- [X] Use the soundcloud api call ~~instead of using `goquery`.~~, `goquery` is still used to fetch the `client_id`.
 - [ ] Config file to save settings.
 
 # Maybe not going TODO
