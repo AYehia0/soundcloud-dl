@@ -7,8 +7,12 @@ import (
 	"github.com/AYehia0/soundcloud-dl/pkg/theme"
 )
 
-var defaultQuality string = "low"
-var soundData = &soundcloud.SoundData{}
+var (
+	defaultQuality = "low"
+	soundData      = &soundcloud.SoundData{}
+	SearchLimit    = 6
+	offset         = 0
+)
 
 func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 
@@ -30,13 +34,15 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 	// --search-and-download
 	if search {
 		keyword := getUserSearch()
-		searchResult := soundcloud.SearchTracksByKeyword(keyword, 0, clientId)
+		apiUrl := soundcloud.GetSeachAPIUrl(keyword, SearchLimit, offset, clientId)
+		searchResult := soundcloud.SearchTracksByKeyword(apiUrl, keyword, offset, clientId)
 
 		// select one to download
 		soundData = selectSearchUrl(searchResult)
 	} else {
 
-		soundData = soundcloud.GetSoundMetaData(url, clientId)
+		apiUrl := soundcloud.GetTrackInfoAPIUrl(url, clientId)
+		soundData = soundcloud.GetSoundMetaData(apiUrl, url, clientId)
 		if soundData == nil {
 			fmt.Printf("%s URL : %s doesn't return a valid track. Track is publicly accessed ?", theme.Red("[+]"), theme.Magenta(url))
 			return

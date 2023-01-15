@@ -3,10 +3,10 @@ package soundcloud
 type Transcode struct {
 	ApiUrl  string `json:"url"`
 	Quality string `json:"quality"`
-	Format  format `json:"format"`
+	Format  Format `json:"format"`
 }
 
-type format struct {
+type Format struct {
 	Protocol string `json:"protocol"`
 	MimeType string `json:"mime_type"`
 }

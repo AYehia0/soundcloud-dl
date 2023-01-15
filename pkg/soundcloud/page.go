@@ -15,13 +15,10 @@ import (
 )
 
 var Sound *SoundData
-var SearchLimit = 6
 
 // extract some meta data under : window.__sc_hydration
 // check if the track exists and open to public
-func GetSoundMetaData(url string, clientId string) *SoundData {
-
-	apiUrl := GetTrackInfoAPIUrl(url, clientId)
+func GetSoundMetaData(apiUrl string, url string, clientId string) *SoundData {
 
 	statusCode, body, err := client.Get(apiUrl)
 
@@ -120,9 +117,7 @@ func mapQuality(url string, format string) string {
 	return "low"
 }
 
-func SearchTracksByKeyword(keyword string, offset int, clientId string) *SearchResult {
-
-	apiUrl := GetSeachAPIUrl(keyword, SearchLimit, offset, clientId)
+func SearchTracksByKeyword(apiUrl string, keyword string, offset int, clientId string) *SearchResult {
 
 	statusCode, body, err := client.Get(apiUrl)
 
