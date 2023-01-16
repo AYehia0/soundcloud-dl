@@ -65,6 +65,10 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 	filePath := soundcloud.Download(track, downloadPath)
 
 	// add tags
+	if filePath == "" {
+		fmt.Printf("\n%s Track was already saved to : %s\n", theme.Green("[-]"), theme.Magenta(downloadPath))
+		return
+	}
 	err := soundcloud.AddMetadata(track, filePath)
 	if err != nil {
 		fmt.Printf("Error happend while adding tags to the track : %s\n", err)
