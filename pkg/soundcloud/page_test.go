@@ -17,7 +17,7 @@ var (
 )
 
 // read the html file
-func expectedHTML(testfile string) []byte {
+func readTestFile(testfile string) []byte {
 	testPath := "../../testdata/"
 	content, err := ioutil.ReadFile(filepath.Join(testPath, testfile))
 
@@ -33,7 +33,7 @@ func TestGetClientId(t *testing.T) {
 	expectedData := "ZQvaVYuPpe0Pg7Ga7V24qFseYl6eTK73"
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusOK)
-		res.Write(expectedHTML("user-soundcloud.html"))
+		res.Write(readTestFile("user-soundcloud.html"))
 	}))
 
 	defer testServer.Close()
@@ -57,7 +57,7 @@ func TestGetSoundMetaData(t *testing.T) {
 	}
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusOK)
-		res.Write(expectedHTML("track-info.json"))
+		res.Write(readTestFile("track-info.json"))
 	}))
 
 	defer testServer.Close()
@@ -92,7 +92,7 @@ func TestGetFormattedDL(t *testing.T) {
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusOK)
 		// return the url
-		res.Write(expectedHTML("media-url.json"))
+		res.Write(readTestFile("media-url.json"))
 	}))
 
 	defer testServer.Close()
@@ -146,7 +146,7 @@ func TestSearchTracksByKeyword(t *testing.T) {
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusOK)
-		res.Write(expectedHTML("search-result.json"))
+		res.Write(readTestFile("search-result.json"))
 	}))
 
 	defer testServer.Close()
