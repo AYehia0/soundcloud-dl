@@ -6,17 +6,22 @@ package soundcloud
 import (
 	"net/url"
 	"strconv"
+	"strings"
 )
 
-var BaseApiUrl = "https://api-v2.soundcloud.com/"
+var (
+	BaseApiUrl = "https://api-v2.soundcloud.com/"
 
-// get all info about the track through the url
-var TrackInfoApiUrl = "https://api-widget.soundcloud.com/resolve?"
+	// get all info about the track through the url
+	ResolveApiUrl = "https://api-widget.soundcloud.com/resolve?"
 
-// to search for tracks
-var SearchTrackApiUrl = "https://api-v2.soundcloud.com/search/tracks?"
+	// to search for tracks
+	SearchTrackApiUrl = "https://api-v2.soundcloud.com/search/tracks?"
 
-// get track only info, not playlist or user I think lol
+	TracksApiUrl = "https://api-v2.soundcloud.com/tracks?"
+)
+
+// resolve the given url: (return info about it).
 func GetTrackInfoAPIUrl(urlx string, clientId string) string {
 	v := url.Values{}
 
@@ -25,7 +30,7 @@ func GetTrackInfoAPIUrl(urlx string, clientId string) string {
 	v.Set("format", "json")
 	v.Set("client_id", clientId)
 
-	encodedUrl := TrackInfoApiUrl + v.Encode()
+	encodedUrl := ResolveApiUrl + v.Encode()
 
 	return encodedUrl
 }
@@ -43,4 +48,18 @@ func GetSeachAPIUrl(searchQuery string, limit int, offset int, clientId string) 
 	encodedUrl := SearchTrackApiUrl + v.Encode()
 
 	return encodedUrl
+}
+
+func GetTracksByIdsApiUrl(ids []string, clientId string) string {
+
+	v := url.Values{}
+
+	// setting all the query params
+	v.Set("client_id", clientId)
+	v.Set("ids", strings.Join(ids, ","))
+
+	encodedUrl := TracksApiUrl + v.Encode()
+
+	return encodedUrl
+
 }
