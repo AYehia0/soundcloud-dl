@@ -9,19 +9,17 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/AYehia0/soundcloud-dl/pkg/client"
 	"github.com/PuerkitoBio/goquery"
 )
 
 var Sound *SoundData
-var SearchLimit = 6
 
 // extract some meta data under : window.__sc_hydration
 // check if the track exists and open to public
-func GetSoundMetaData(url string, clientId string) *SoundData {
-
-	apiUrl := GetTrackInfoAPIUrl(url, clientId)
+func GetSoundMetaData(apiUrl string, url string, clientId string) *SoundData {
 
 	statusCode, body, err := client.Get(apiUrl)
 
@@ -81,31 +79,43 @@ func GetClientId(url string) string {
 }
 
 func GetFormattedDL(track *SoundData, clientId string) []DownloadTrack {
+
 	ext := "mp3" // the default extension type
 	tracks := make([]DownloadTrack, 0)
 	data := track.Transcodes.Transcodings
+	var wg sync.WaitGroup
 
 	for _, tcode := range data {
-		url := tcode.ApiUrl + "?client_id=" + clientId
-		statusCode, body, err := client.Get(url)
-		if err != nil && statusCode != http.StatusOK {
-			continue
-		}
-		q := mapQuality(tcode.ApiUrl, tcode.Format.MimeType)
-		if q == "high" {
-			ext = "ogg"
-		}
-		mediaUrl := Media{}
-		json.Unmarshal(body, &mediaUrl)
+		wg.Add(1)
+		go func(tcode Transcode) {
+			defer wg.Done()
 
-		tmpTrack := DownloadTrack{
-			Url:       mediaUrl.Url,
-			Quality:   q,
-			SoundData: track,
-			Ext:       ext,
-		}
-		tracks = append(tracks, tmpTrack)
+			url := tcode.ApiUrl + "?client_id=" + clientId
+			statusCode, body, err := client.Get(url)
+			if err != nil && statusCode != http.StatusOK {
+				return
+			}
+			q := mapQuality(tcode.ApiUrl, tcode.Format.MimeType)
+			if q == "high" {
+				ext = "ogg"
+			}
+			mediaUrl := Media{}
+			dec := json.NewDecoder(bytes.NewReader(body))
+			if err := dec.Decode(&mediaUrl); err != nil {
+				log.Println("Error decoding json: ", err)
+				return
+			}
+			tmpTrack := DownloadTrack{
+				Url:       mediaUrl.Url,
+				Quality:   q,
+				SoundData: track,
+				Ext:       ext,
+			}
+			tracks = append(tracks, tmpTrack)
+
+		}(tcode)
 	}
+	wg.Wait()
 	return tracks
 }
 
@@ -120,9 +130,7 @@ func mapQuality(url string, format string) string {
 	return "low"
 }
 
-func SearchTracksByKeyword(keyword string, offset int, clientId string) *SearchResult {
-
-	apiUrl := GetSeachAPIUrl(keyword, SearchLimit, offset, clientId)
+func SearchTracksByKeyword(apiUrl string, keyword string, offset int, clientId string) *SearchResult {
 
 	statusCode, body, err := client.Get(apiUrl)
 

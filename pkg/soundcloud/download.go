@@ -39,9 +39,9 @@ func fileExists(path string) bool {
 }
 
 // extract the urls of the individual segment and then steam/download.
-func downloadSeg(wg *sync.WaitGroup, segment *m.MediaSegment, file *os.File, dlbar *bar.ProgressBar) {
+func downloadSeg(wg *sync.WaitGroup, segmentURI string, file *os.File, dlbar *bar.ProgressBar) {
 	defer wg.Done()
-	resp, err := http.Get(segment.URI)
+	resp, err := http.Get(segmentURI)
 
 	if err != nil {
 		return
@@ -50,7 +50,11 @@ func downloadSeg(wg *sync.WaitGroup, segment *m.MediaSegment, file *os.File, dlb
 	defer resp.Body.Close()
 
 	// append to the file
-	_, err = io.Copy(io.MultiWriter(file, dlbar), resp.Body)
+	if dlbar == nil {
+		_, err = io.Copy(io.MultiWriter(file), resp.Body)
+	} else {
+		_, err = io.Copy(io.MultiWriter(file, dlbar), resp.Body)
+	}
 
 	if err != nil {
 		return
@@ -58,31 +62,14 @@ func downloadSeg(wg *sync.WaitGroup, segment *m.MediaSegment, file *os.File, dlb
 
 }
 
-// using the goroutine to download each segment concurrently and wait till all finished
-func downloadM3u8(m3u8Url string, filepath string) error {
-	resp, err := http.Get(m3u8Url)
+func getSegments(body io.Reader) []string {
+	segments := make([]string, 0)
+	pl, listType, err := m.DecodeFrom(body, true)
 
 	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	pl, listType, err := m.DecodeFrom(resp.Body, true)
-	if err != nil {
-		return err
+		return nil
 	}
 
-	dlbar := bar.DefaultBytes(
-		resp.ContentLength,
-		"Downloading",
-	)
-
-	// create a file to add content to
-	file, _ := os.OpenFile(filepath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	// file, _ := os.Create(filepath)
-
-	// the go routine now
-	var wg sync.WaitGroup
 	switch listType {
 	case m.MEDIA:
 		mediapl := pl.(*m.MediaPlaylist)
@@ -90,21 +77,32 @@ func downloadM3u8(m3u8Url string, filepath string) error {
 			if segment == nil {
 				continue
 			}
-			wg.Add(1)
-			// the added go routine has nothing to do here, as `go` keyword causes some issues idk why
-			downloadSeg(&wg, segment, file, dlbar)
+			segments = append(segments, segment.URI)
 		}
-	default:
-		return errors.New("Unsupported type!")
+	}
+	return segments
+}
+
+// using the goroutine to download each segment concurrently and wait till all finished
+func DownloadM3u8(filepath string, dlbar *bar.ProgressBar, segments []string) error {
+
+	file, _ := os.OpenFile(filepath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+
+	// the go routine now
+	var wg sync.WaitGroup
+
+	for _, segment := range segments {
+		wg.Add(1)
+		downloadSeg(&wg, segment, file, dlbar)
 	}
 
 	return nil
 }
 
-// download the track
-func Download(track DownloadTrack, dlpath string) string {
-	// TODO: Prompt Y/N if the file exists and rename by adding _<random/date>.<ext>
-	trackName := track.SoundData.Title + "[" + track.Quality + "]." + track.Ext
+// before download validation
+// return the path if everything is alright.
+func validateDownload(dlpath string, trackName string) string {
+
 	testPath := path.Join(dlpath, trackName)
 	path, err := expandPath(testPath)
 
@@ -112,10 +110,31 @@ func Download(track DownloadTrack, dlpath string) string {
 	if fileExists(path) || err != nil {
 		return ""
 	}
+	return path
+}
+
+// download the track
+func Download(track DownloadTrack, dlpath string) string {
+	// TODO: Prompt Y/N if the file exists and rename by adding _<random/date>.<ext>
+	trackName := track.SoundData.Title + "[" + track.Quality + "]." + track.Ext
+	path := validateDownload(dlpath, trackName)
 
 	// check if the track is hls
 	if track.Quality != "low" {
-		downloadM3u8(track.Url, path)
+
+		resp, err := http.Get(track.Url)
+		if err != nil {
+			return ""
+		}
+		defer resp.Body.Close()
+
+		dlbar := bar.DefaultBytes(
+			resp.ContentLength,
+			"Downloading",
+		)
+		segments := getSegments(resp.Body)
+		DownloadM3u8(path, dlbar, segments)
+
 		return path
 	}
 	resp, err := http.Get(track.Url)
