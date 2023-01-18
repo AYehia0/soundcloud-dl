@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/AYehia0/soundcloud-dl/pkg/client"
 	"github.com/PuerkitoBio/goquery"
@@ -78,31 +79,43 @@ func GetClientId(url string) string {
 }
 
 func GetFormattedDL(track *SoundData, clientId string) []DownloadTrack {
+
 	ext := "mp3" // the default extension type
 	tracks := make([]DownloadTrack, 0)
 	data := track.Transcodes.Transcodings
+	var wg sync.WaitGroup
 
 	for _, tcode := range data {
-		url := tcode.ApiUrl + "?client_id=" + clientId
-		statusCode, body, err := client.Get(url)
-		if err != nil && statusCode != http.StatusOK {
-			continue
-		}
-		q := mapQuality(tcode.ApiUrl, tcode.Format.MimeType)
-		if q == "high" {
-			ext = "ogg"
-		}
-		mediaUrl := Media{}
-		json.Unmarshal(body, &mediaUrl)
+		wg.Add(1)
+		go func(tcode Transcode) {
+			defer wg.Done()
 
-		tmpTrack := DownloadTrack{
-			Url:       mediaUrl.Url,
-			Quality:   q,
-			SoundData: track,
-			Ext:       ext,
-		}
-		tracks = append(tracks, tmpTrack)
+			url := tcode.ApiUrl + "?client_id=" + clientId
+			statusCode, body, err := client.Get(url)
+			if err != nil && statusCode != http.StatusOK {
+				return
+			}
+			q := mapQuality(tcode.ApiUrl, tcode.Format.MimeType)
+			if q == "high" {
+				ext = "ogg"
+			}
+			mediaUrl := Media{}
+			dec := json.NewDecoder(bytes.NewReader(body))
+			if err := dec.Decode(&mediaUrl); err != nil {
+				log.Println("Error decoding json: ", err)
+				return
+			}
+			tmpTrack := DownloadTrack{
+				Url:       mediaUrl.Url,
+				Quality:   q,
+				SoundData: track,
+				Ext:       ext,
+			}
+			tracks = append(tracks, tmpTrack)
+
+		}(tcode)
 	}
+	wg.Wait()
 	return tracks
 }
 
