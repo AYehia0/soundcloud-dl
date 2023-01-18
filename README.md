@@ -21,7 +21,7 @@ A simple CLI app written in GO used to download sound-tracks from soundcloud wit
 - Save tracks with tags/metadata : `Artwork Image`, `Creation Date`, `Author Name`.
 - Multiple formats and qualities.
 - [Blazingly Fast](https://youtu.be/Z0GX2mTUtfo)
-- Download playlists (coming soon).
+- Download playlists.
 - Download user's tracks and playlists. (coming soon).
 
 # Installation
@@ -57,8 +57,16 @@ Notes : `-s` can't work with a `url` passed.
 
 - **Download through search**
 
-Note that, search is limited to 6 results of type `track`, later on maybe `playlist` will be added. Also pagination may be add!.
+Note: search is limited to 6 results of type `track`, later on maybe `playlist` will be added. Also pagination may be add!.
 
 <p align="center">
     <img src="assets/download-search-short.gif" style="border-radius:8px" alt="goandsoundcloud">
+</p>
+
+- **Download a playlist**
+
+Note : when downloading a playlist, it uses the flag `--best` to grab the best quality.
+
+<p align="center">
+    <img src="assets/playlist-download.gif" style="border-radius:8px" alt="goandsoundcloud">
 </p>
