@@ -32,7 +32,28 @@ func GetSoundMetaData(apiUrl string, url string, clientId string) *SoundData {
 	return Sound
 }
 
-func GetClientId(url string) string {
+func ExtractClientId(scriptUrl string) string {
+	// making a GET request to find the client_id
+	resp, err := http.Get(scriptUrl)
+	if err != nil {
+		fmt.Printf("Something went wrong while requesting : %s , Error : %s", scriptUrl, err)
+	}
+	// reading the body
+	bodyData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer resp.Body.Close()
+
+	// search for the client_id
+	pattern := ",client_id:\"([^\"]*?.[^\"]*?)\""
+	re := regexp.MustCompile(pattern)
+	matches := re.FindAllStringSubmatch(string(bodyData), 1)
+
+	return matches[0][1]
+}
+
+func GetScriptUrl(url string) string {
 
 	if url == "" {
 		// the best url ever, if you find this then you're so cool :D I love you :DDD
@@ -56,26 +77,7 @@ func GetClientId(url string) string {
 		return ""
 	}
 
-	// making a GET request to find the client_id
-	resp, err := http.Get(apiurl)
-	if err != nil {
-		fmt.Printf("Something went wrong while requesting : %s , Error : %s", apiurl, err)
-	}
-
-	// reading the body
-	bodyData, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer resp.Body.Close()
-
-	// search for the client_id
-	pattern := ",client_id:\"([^\"]*?.[^\"]*?)\""
-	re := regexp.MustCompile(pattern)
-	matches := re.FindAllStringSubmatch(string(bodyData), 1)
-
-	return matches[0][1]
+	return apiurl
 }
 
 func GetFormattedDL(track *SoundData, clientId string) []DownloadTrack {

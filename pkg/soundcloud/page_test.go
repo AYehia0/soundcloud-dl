@@ -13,7 +13,7 @@ import (
 
 var (
 	trackUrl = "https://soundcloud.com/sobhi-mohamed5/99-118-mp4"
-	clientId = "ZQvaVYuPpe0Pg7Ga7V24qFseYl6eTK73"
+	clientId = "ILoveYouMate:D"
 )
 
 // read the html file
@@ -30,18 +30,30 @@ func readTestFile(testfile string) []byte {
 
 // TODO: Test if server fails to respond
 func TestGetClientId(t *testing.T) {
-	expectedData := "ZQvaVYuPpe0Pg7Ga7V24qFseYl6eTK73"
+	expectedClientId := clientId
+	expectedScriptId := "https://a-v2.sndcdn.com/assets/50-179ff18e.js"
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		if req.URL.String()[1:] == expectedScriptId {
+			res.WriteHeader(http.StatusOK)
+			res.Write(readTestFile("script.js"))
+			return
+		}
 		res.WriteHeader(http.StatusOK)
 		res.Write(readTestFile("user-soundcloud.html"))
 	}))
 
 	defer testServer.Close()
 
-	clientId := soundcloud.GetClientId(testServer.URL)
+	scriptUrl := soundcloud.GetScriptUrl(testServer.URL)
 
-	if clientId != expectedData {
-		t.Errorf("Something wen't wrong, expected clientId to be %s", expectedData)
+	if scriptUrl != expectedScriptId {
+		t.Errorf("Something wen't wrong, expected ScriptUrl to be %s", expectedScriptId)
+	}
+
+	clientId := soundcloud.ExtractClientId(testServer.URL + "/" + scriptUrl)
+
+	if clientId != expectedClientId {
+		t.Errorf("Something wen't wrong, expected clientId to be %s", expectedClientId)
 	}
 }
 
