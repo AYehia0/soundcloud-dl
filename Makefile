@@ -1,5 +1,5 @@
 TRACK_URL := https://soundcloud.com/sobhi-mohamed5/99-118-mp4
-PL_URL := https://soundcloud.com/adam00alakad/sets/k1rc41mibizn 
+PL_URL := https://soundcloud.com/yzpzprzurqvv/sets/2018-c 
 DL_PATH := ./download
 LANG=en_US.UTF-8
 SHELL=/bin/bash

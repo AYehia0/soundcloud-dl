@@ -29,7 +29,8 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 		return
 	}
 
-	clientId := soundcloud.GetClientId(url)
+	scriptUrl := soundcloud.GetScriptUrl(url)
+	clientId := soundcloud.ExtractClientId(scriptUrl)
 
 	if clientId == "" {
 		fmt.Println("Something went wrong while getting the Client Id!")
@@ -55,33 +56,29 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 		fmt.Printf("%s %s found. Title : %s - Duration : %s\n", theme.Green("[+]"), strings.Title(soundData.Kind), theme.Magenta(soundData.Title), theme.Magenta(theme.FormatTime(soundData.Duration)))
 	}
 
+	// a progress bar
+	pb := mpb.New(
+		mpb.WithWidth(60),
+		mpb.WithRefreshRate(180*time.Millisecond),
+	)
+
 	// check if the url is a playlist
 	if soundData.Kind == "playlist" {
 		var wg sync.WaitGroup
 		plDownloadTracks := getPlaylistDownloadTracks(soundData, clientId)
-		p := mpb.New(mpb.WithWaitGroup(&wg),
-			mpb.WithWidth(64),
-			mpb.WithRefreshRate(180*time.Millisecond),
-		)
-
+		fmt.Printf("%s %s\n", theme.Magenta("[+]"), theme.Green("Downloading Playlist"))
 		for _, dlT := range plDownloadTracks {
-
 			wg.Add(1)
-
 			go func(dlT []soundcloud.DownloadTrack) {
 				defer wg.Done()
-				// bestQuality is true to avoid prompting the user for quality choosing each time and speed up
-				// TODO: get a single progress bar, this will require the use of "https://github.com/cheggaaa/pb" since the current pb doesn't support download pool (I think)
-				t := getTrack(dlT, true)
-				fp := soundcloud.Download(t, downloadPath, p)
 
-				// silent indication of already existing files
-				if fp == "" {
+				t := getTrack(dlT, true)
+				fp := soundcloud.Download(t, downloadPath, pb)
+				if fp == "" { // silent indication of already existing files
 					return
 				}
 				soundcloud.AddMetadata(t, fp)
 			}(dlT)
-
 		}
 		wg.Wait()
 
@@ -92,7 +89,7 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 	downloadTracks := soundcloud.GetFormattedDL(soundData, clientId)
 
 	track := getTrack(downloadTracks, bestQuality)
-	filePath := soundcloud.Download(track, downloadPath, nil)
+	filePath := soundcloud.Download(track, downloadPath, pb)
 
 	// add tags
 	if filePath == "" {
