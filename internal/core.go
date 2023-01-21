@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/AYehia0/soundcloud-dl/pkg/soundcloud"
 	"github.com/AYehia0/soundcloud-dl/pkg/theme"
+	"github.com/vbauerster/mpb/v8"
 )
 
 var (
@@ -57,6 +59,10 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 	if soundData.Kind == "playlist" {
 		var wg sync.WaitGroup
 		plDownloadTracks := getPlaylistDownloadTracks(soundData, clientId)
+		p := mpb.New(mpb.WithWaitGroup(&wg),
+			mpb.WithWidth(64),
+			mpb.WithRefreshRate(180*time.Millisecond),
+		)
 
 		for _, dlT := range plDownloadTracks {
 
@@ -67,15 +73,15 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 				// bestQuality is true to avoid prompting the user for quality choosing each time and speed up
 				// TODO: get a single progress bar, this will require the use of "https://github.com/cheggaaa/pb" since the current pb doesn't support download pool (I think)
 				t := getTrack(dlT, true)
-				fp := soundcloud.Download(t, downloadPath)
+				fp := soundcloud.Download(t, downloadPath, p)
 
 				// silent indication of already existing files
 				if fp == "" {
 					return
 				}
 				soundcloud.AddMetadata(t, fp)
-
 			}(dlT)
+
 		}
 		wg.Wait()
 
@@ -86,7 +92,7 @@ func Sc(args []string, downloadPath string, bestQuality bool, search bool) {
 	downloadTracks := soundcloud.GetFormattedDL(soundData, clientId)
 
 	track := getTrack(downloadTracks, bestQuality)
-	filePath := soundcloud.Download(track, downloadPath)
+	filePath := soundcloud.Download(track, downloadPath, nil)
 
 	// add tags
 	if filePath == "" {

@@ -9,10 +9,11 @@ import (
 	"os/user"
 	"path"
 	"path/filepath"
-	"sync"
 
 	m "github.com/grafov/m3u8"
 	bar "github.com/schollz/progressbar/v3"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 // expand the given path ~/Desktop to the current logged in user /home/<username>/Desktop
@@ -39,22 +40,22 @@ func fileExists(path string) bool {
 }
 
 // extract the urls of the individual segment and then steam/download.
-func downloadSeg(wg *sync.WaitGroup, segmentURI string, file *os.File, dlbar *bar.ProgressBar) {
-	defer wg.Done()
+func downloadSeg(segmentURI string, file *os.File, dlbar *mpb.Bar) {
 	resp, err := http.Get(segmentURI)
 
 	if err != nil {
 		return
 	}
 
+	reader := dlbar.ProxyReader(resp.Body)
 	defer resp.Body.Close()
 
-	// append to the file
-	if dlbar == nil {
-		_, err = io.Copy(io.MultiWriter(file), resp.Body)
-	} else {
-		_, err = io.Copy(io.MultiWriter(file, dlbar), resp.Body)
-	}
+	defer reader.Close()
+
+	dlbar.SetTotal(dlbar.Current()+resp.ContentLength, false)
+	dlbar.IncrBy(int(resp.ContentLength))
+
+	_, err = io.Copy(file, resp.Body)
 
 	if err != nil {
 		return
@@ -84,16 +85,30 @@ func getSegments(body io.Reader) []string {
 }
 
 // using the goroutine to download each segment concurrently and wait till all finished
-func DownloadM3u8(filepath string, dlbar *bar.ProgressBar, segments []string) error {
+func DownloadM3u8(filepath string, prog *mpb.Progress, segments []string) error {
 
 	file, _ := os.OpenFile(filepath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 
-	// the go routine now
-	var wg sync.WaitGroup
+	// getting the total size of all the segments = one track
+	// var totalSize int64
+	// for _, segment := range segments {
+	// 	resp, _ := http.Head(segment)
+	// 	size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
+	// 	totalSize += int64(size)
+	// }
 
+	dlbar := prog.AddBar(0,
+		mpb.PrependDecorators(
+			decor.CountersKibiByte("% .2f / % .2f"),
+		),
+		mpb.AppendDecorators(
+			decor.EwmaETA(decor.ET_STYLE_GO, 90),
+			decor.Name(" -- "),
+			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
+		),
+	)
 	for _, segment := range segments {
-		wg.Add(1)
-		downloadSeg(&wg, segment, file, dlbar)
+		downloadSeg(segment, file, dlbar)
 	}
 
 	return nil
@@ -114,7 +129,7 @@ func validateDownload(dlpath string, trackName string) string {
 }
 
 // download the track
-func Download(track DownloadTrack, dlpath string) string {
+func Download(track DownloadTrack, dlpath string, prog *mpb.Progress) string {
 	// TODO: Prompt Y/N if the file exists and rename by adding _<random/date>.<ext>
 	trackName := track.SoundData.Title + "[" + track.Quality + "]." + track.Ext
 	path := validateDownload(dlpath, trackName)
@@ -128,12 +143,8 @@ func Download(track DownloadTrack, dlpath string) string {
 		}
 		defer resp.Body.Close()
 
-		dlbar := bar.DefaultBytes(
-			resp.ContentLength,
-			"Downloading",
-		)
 		segments := getSegments(resp.Body)
-		DownloadM3u8(path, dlbar, segments)
+		DownloadM3u8(path, prog, segments)
 
 		return path
 	}
