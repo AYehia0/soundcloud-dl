@@ -9,11 +9,11 @@ import (
 	"os/user"
 	"path"
 	"path/filepath"
+	"strconv"
 
+	"github.com/AYehia0/soundcloud-dl/pkg/theme"
 	m "github.com/grafov/m3u8"
-	bar "github.com/schollz/progressbar/v3"
 	"github.com/vbauerster/mpb/v8"
-	"github.com/vbauerster/mpb/v8/decor"
 )
 
 // expand the given path ~/Desktop to the current logged in user /home/<username>/Desktop
@@ -21,7 +21,6 @@ func expandPath(path string) (string, error) {
 	if len(path) == 0 || path[0] != '~' {
 		return path, nil
 	}
-
 	usr, err := user.Current()
 	if err != nil {
 		return "", err
@@ -40,29 +39,29 @@ func fileExists(path string) bool {
 }
 
 // extract the urls of the individual segment and then steam/download.
-func downloadSeg(segmentURI string, file *os.File, dlbar *mpb.Bar) {
+func downloadSeg(segmentURI string, file *os.File, bar *mpb.Bar) {
 	resp, err := http.Get(segmentURI)
-
+	var reader io.ReadCloser
 	if err != nil {
 		return
 	}
-
-	reader := dlbar.ProxyReader(resp.Body)
+	if bar != nil {
+		reader = bar.ProxyReader(resp.Body)
+	} else {
+		reader = resp.Body
+	}
 	defer resp.Body.Close()
-
 	defer reader.Close()
 
-	dlbar.SetTotal(dlbar.Current()+resp.ContentLength, false)
-	dlbar.IncrBy(int(resp.ContentLength))
-
-	_, err = io.Copy(file, resp.Body)
+	_, err = io.Copy(file, reader)
 
 	if err != nil {
 		return
 	}
-
 }
 
+// parse the m3u8 to get into the playlist and extract the segments
+// In our case, we're only interested in URLs of the segments
 func getSegments(body io.Reader) []string {
 	segments := make([]string, 0)
 	pl, listType, err := m.DecodeFrom(body, true)
@@ -84,31 +83,37 @@ func getSegments(body io.Reader) []string {
 	return segments
 }
 
+// making more requests to get the ContentLength of all the segments inside the playlist
+// probablly it's not the best thing to do, but it's a nice to have the total size
+// making a bar with 0 size making it really hard to :
+// 1- Finish the bar to the end.
+// 2- ProxyReader, when used displays wrong file sizes
+// 3- Have to manually increment and SetTotal sizes, ahhhhh!
+func addSegmentSizes(segments []string) int64 {
+	var totalSize int64
+	for _, segment := range segments {
+		resp, _ := http.Head(segment)
+		size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
+		totalSize += int64(size)
+	}
+	return totalSize
+}
+
 // using the goroutine to download each segment concurrently and wait till all finished
-func DownloadM3u8(filepath string, prog *mpb.Progress, segments []string) error {
+func DownloadM3u8(filepath string, segments []string, prog *mpb.Progress) error {
 
 	file, _ := os.OpenFile(filepath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	var bar *mpb.Bar = nil
 
 	// getting the total size of all the segments = one track
-	// var totalSize int64
-	// for _, segment := range segments {
-	// 	resp, _ := http.Head(segment)
-	// 	size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
-	// 	totalSize += int64(size)
-	// }
+	totalSize := addSegmentSizes(segments)
 
-	dlbar := prog.AddBar(0,
-		mpb.PrependDecorators(
-			decor.CountersKibiByte("% .2f / % .2f"),
-		),
-		mpb.AppendDecorators(
-			decor.EwmaETA(decor.ET_STYLE_GO, 90),
-			decor.Name(" -- "),
-			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
-		),
-	)
+	if prog != nil {
+		bar = theme.NewBar(prog, totalSize)
+	}
+
 	for _, segment := range segments {
-		downloadSeg(segment, file, dlbar)
+		downloadSeg(segment, file, bar)
 	}
 
 	return nil
@@ -128,43 +133,42 @@ func validateDownload(dlpath string, trackName string) string {
 	return path
 }
 
-// download the track
+// a progress bar is passed which is used to display the progress bar (damn I am smart boi)
+// if the download is done fine, the path of the created file is passed, else empty string is passed
+// a better way is to return error, which i am going to do in the refactoring phase.
 func Download(track DownloadTrack, dlpath string, prog *mpb.Progress) string {
-	// TODO: Prompt Y/N if the file exists and rename by adding _<random/date>.<ext>
 	trackName := track.SoundData.Title + "[" + track.Quality + "]." + track.Ext
 	path := validateDownload(dlpath, trackName)
+	var reader io.ReadCloser
 
 	// check if the track is hls
 	if track.Quality != "low" {
-
 		resp, err := http.Get(track.Url)
 		if err != nil {
 			return ""
 		}
 		defer resp.Body.Close()
-
 		segments := getSegments(resp.Body)
-		DownloadM3u8(path, prog, segments)
+		DownloadM3u8(path, segments, prog)
 
 		return path
 	}
 	resp, err := http.Get(track.Url)
-
 	if err != nil {
 		return ""
 	}
 	defer resp.Body.Close()
 
-	// check if the file exists
 	f, _ := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
 
-	bar := bar.DefaultBytes(
-		resp.ContentLength,
-		"Downloading",
-	)
-
-	io.Copy(io.MultiWriter(f, bar), resp.Body)
+	if prog != nil {
+		bar := theme.NewBar(prog, resp.ContentLength)
+		reader = bar.ProxyReader(resp.Body)
+	} else {
+		reader = resp.Body
+	}
+	io.Copy(f, reader)
 
 	return path
 }

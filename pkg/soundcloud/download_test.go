@@ -39,7 +39,7 @@ func TestDownload(t *testing.T) {
 		},
 	}
 
-	expectedPath := soundcloud.Download(downloadTrack, path)
+	expectedPath := soundcloud.Download(downloadTrack, path, nil)
 
 	// read the downloaded file
 	file, err := ioutil.ReadFile(expectedPath)
@@ -143,7 +143,7 @@ func TestDownloadM3u8(t *testing.T) {
 	for k := range segments {
 		segmentURIs = append(segmentURIs, testServer.URL+"/"+strconv.Itoa(k))
 	}
-	soundcloud.DownloadM3u8(path, nil, segmentURIs)
+	soundcloud.DownloadM3u8(path, segmentURIs, nil)
 
 	// read the downloaded file
 	file, err := ioutil.ReadFile(path)
