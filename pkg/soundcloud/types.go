@@ -37,8 +37,6 @@ type Media struct {
 
 type DownloadTrack struct {
 	Url       string
-	Size      int
-	Data      []byte
 	Quality   string
 	Ext       string
 	SoundData *SoundData
