@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/go-sound.png" height="400px" width="100%" style="border-radius:8px" alt="goandsoundcloud">
+    <img src="assets/go-sound.png" height="auto" width="100%" style="border-radius:8px" alt="goandsoundcloud">
 </p>
 
 <h1 align="center">
