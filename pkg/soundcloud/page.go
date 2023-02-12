@@ -138,11 +138,9 @@ func GetFormattedDL(track *SoundData, clientId string) []DownloadTrack {
 func mapQuality(url string, format string) string {
 	tmp := strings.Split(url, "/")
 	if tmp[len(tmp)-1] == "hls" && strings.HasPrefix(format, "audio/ogg") {
-		return "high"
-	} else if tmp[len(tmp)-1] == "hls" && strings.HasPrefix(format, "audio/mpeg") {
-		return "medium"
+		return "ogg"
 	}
-	return "low"
+	return "mp3"
 }
 
 func SearchTracksByKeyword(apiUrl string, keyword string, offset int, clientId string) *SearchResult {
