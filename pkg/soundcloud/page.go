@@ -86,6 +86,11 @@ func GetFormattedDL(track *SoundData, clientId string) []DownloadTrack {
 	var wg sync.WaitGroup
 
 	for _, tcode := range data {
+		// skip qualities
+		if tcode.Format.MimeType == "audio/mpeg" && tcode.Format.Protocol == "hls" {
+			continue
+		}
+
 		wg.Add(1)
 		go func(tcode Transcode) {
 			defer wg.Done()
