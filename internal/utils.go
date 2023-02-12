@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/AYehia0/soundcloud-dl/pkg/helpers"
 	"github.com/AYehia0/soundcloud-dl/pkg/soundcloud"
 	"github.com/AYehia0/soundcloud-dl/pkg/theme"
 	"github.com/manifoldco/promptui"
@@ -69,18 +70,9 @@ func chooseQuality(qualities []string) string {
 }
 
 func getHighestQuality(qualities []string) string {
-	allQualities := []string{"high", "medium", "low"}
-	var in = func(a string, list []string) bool {
-		for _, b := range list {
-			if b == a {
-				return true
-			}
-		}
-		return false
-	}
-
+	allQualities := []string{"ogg", "mp3"}
 	for _, q := range allQualities {
-		if in(q, qualities) {
+		if helpers.In(q, qualities) {
 			return q
 		}
 	}
