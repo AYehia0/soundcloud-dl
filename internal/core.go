@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	defaultQuality = "low"
+	defaultQuality = "mp3"
 	soundData      = &soundcloud.SoundData{}
 	SearchLimit    = 6
 	offset         = 0
