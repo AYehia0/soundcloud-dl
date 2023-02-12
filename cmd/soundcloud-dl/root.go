@@ -9,7 +9,7 @@ import (
 var Search bool
 var DownloadPath string
 var BestQuality bool
-var TrackQuality = Mp3Quality
+var TrackQuality Quality
 
 type Quality string
 
