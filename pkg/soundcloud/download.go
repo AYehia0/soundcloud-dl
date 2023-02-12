@@ -3,6 +3,7 @@ package soundcloud
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/AYehia0/soundcloud-dl/pkg/theme"
 	m "github.com/grafov/m3u8"
 	bar "github.com/schollz/progressbar/v3"
 )
@@ -101,30 +103,33 @@ func DownloadM3u8(filepath string, dlbar *bar.ProgressBar, segments []string) er
 
 // before download validation
 // return the path if everything is alright.
-func validateDownload(dlpath string, trackName string) string {
+func validateDownload(dlpath string, trackName string) (string, error) {
 
 	testPath := path.Join(dlpath, trackName)
 	path, err := expandPath(testPath)
 
 	// TODO: handle all different kind of errors
 	if fileExists(path) || err != nil {
-		return ""
+		return path, fmt.Errorf("\n%s Track was already saved to : %s", theme.Green("[-]"), theme.Magenta(path))
 	}
-	return path
+	return path, nil
 }
 
 // download the track
-func Download(track DownloadTrack, dlpath string) string {
+func Download(track DownloadTrack, dlpath string) (string, error) {
 	// TODO: Prompt Y/N if the file exists and rename by adding _<random/date>.<ext>
-	trackName := track.SoundData.Title + "[" + track.Quality + "]." + track.Ext
-	path := validateDownload(dlpath, trackName)
+	trackName := track.SoundData.Title + "." + track.Ext
+	path, err := validateDownload(dlpath, trackName)
+	if err != nil {
+		return path, err
+	}
 
 	// check if the track is hls
-	if track.Quality != "low" {
+	if track.Quality != "mp3" {
 
 		resp, err := http.Get(track.Url)
 		if err != nil {
-			return ""
+			return path, err
 		}
 		defer resp.Body.Close()
 
@@ -135,12 +140,12 @@ func Download(track DownloadTrack, dlpath string) string {
 		segments := getSegments(resp.Body)
 		DownloadM3u8(path, dlbar, segments)
 
-		return path
+		return path, nil
 	}
 	resp, err := http.Get(track.Url)
 
 	if err != nil {
-		return ""
+		return path, err
 	}
 	defer resp.Body.Close()
 
@@ -155,5 +160,5 @@ func Download(track DownloadTrack, dlpath string) string {
 
 	io.Copy(io.MultiWriter(f, bar), resp.Body)
 
-	return path
+	return path, nil
 }
