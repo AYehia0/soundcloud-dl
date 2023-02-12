@@ -118,7 +118,7 @@ func TestGetFormattedDL(t *testing.T) {
 		Transcodes: soundcloud.Transcodes{
 			Transcodings: []soundcloud.Transcode{
 				{ApiUrl: testServer.URL, Quality: "sq", Format: soundcloud.Format{
-					Protocol: "hls",
+					Protocol: "progressive",
 					MimeType: "audio/mpeg",
 				}},
 			},
@@ -128,7 +128,7 @@ func TestGetFormattedDL(t *testing.T) {
 	formattedDownloadT := soundcloud.GetFormattedDL(track, clientId)
 
 	// the expected length is 1
-	if len(formattedDownloadT) < 0 {
+	if len(formattedDownloadT) < 1 {
 		t.Errorf("Expected the length of %T to be >= 1, got : %v", formattedDownloadT, len(formattedDownloadT))
 		return
 	}

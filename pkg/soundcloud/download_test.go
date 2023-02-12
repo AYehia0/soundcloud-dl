@@ -39,7 +39,7 @@ func TestDownload(t *testing.T) {
 		},
 	}
 
-	expectedPath := soundcloud.Download(downloadTrack, path)
+	expectedPath, nil := soundcloud.Download(downloadTrack, path)
 
 	// read the downloaded file
 	file, err := ioutil.ReadFile(expectedPath)
